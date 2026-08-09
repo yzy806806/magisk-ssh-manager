@@ -28,9 +28,9 @@ android {
                     ?: System.getenv(key)?.trim()?.takeIf { it.isNotEmpty() })
                     ?.trim('"', '\'')
 
-            val storeFile = getValue("RELEASE_STORE_FILE")
-            if (!storeFile.isNullOrBlank()) {
-                storeFile = file(storeFile)
+            val storeFileVal = getValue("RELEASE_STORE_FILE")
+            if (!storeFileVal.isNullOrBlank()) {
+                storeFile = file(storeFileVal)
                 storePassword = getValue("RELEASE_STORE_PASSWORD")
                 keyAlias = getValue("RELEASE_KEY_ALIAS")
                 keyPassword = getValue("RELEASE_KEY_PASSWORD")
