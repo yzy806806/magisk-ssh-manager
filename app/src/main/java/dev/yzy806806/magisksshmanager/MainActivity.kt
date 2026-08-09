@@ -16,6 +16,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.rememberCoroutineScope
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
@@ -40,12 +42,16 @@ fun ManagerApp() {
     var moduleVersion by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
 
-    suspend fun refresh() {
-        withContext(Dispatchers.IO) {
-            moduleInstalled = RootShell.isModuleInstalled()
-            moduleVersion = RootShell.moduleVersion()
-            sshdRunning = moduleInstalled && RootShell.isSshdRunning()
+    fun refresh() {
+        scope.launch {
+            val (inst, ver, run) = withContext(Dispatchers.IO) {
+                Triple(RootShell.isModuleInstalled(), RootShell.moduleVersion(), RootShell.isSshdRunning())
+            }
+            moduleInstalled = inst
+            moduleVersion = ver
+            sshdRunning = run
         }
     }
 
@@ -192,8 +198,11 @@ fun KeysTab() {
         keys = withContext(Dispatchers.IO) { SshConfig.listKeys() }
     }
 
+    val scope = rememberCoroutineScope()
     fun refreshKeys() {
-        keys = withContext(Dispatchers.IO) { RootShell.listKeys() }
+        scope.launch {
+            keys = withContext(Dispatchers.IO) { SshConfig.listKeys() }
+        }
     }
 
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
