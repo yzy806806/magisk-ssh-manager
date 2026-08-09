@@ -54,10 +54,6 @@ fun ManagerApp() {
         refresh()
     }
 
-    fun toast(msg: String) {
-        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-    }
-
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(title = { Text("MagiskSSH Manager") })
@@ -96,7 +92,7 @@ fun ManagerApp() {
                             loading = true
                             val result = ModuleInstaller.install(context)
                             loading = false
-                            toast(result)
+                            toast(context, result)
                             refresh()
                         },
                         onUninstall = {
@@ -110,12 +106,12 @@ fun ManagerApp() {
                             val result = if (sshdRunning) SshConfig.stopDaemon()
                             else SshConfig.startDaemon()
                             loading = false
-                            toast(result)
+                            toast(context, result)
                             refresh()
                         }
                     )
                     1 -> KeysTab()
-                    2 -> ConfigTab(onChanged = { loading = true; SshConfig.restartDaemon(); loading = false; toast("已重启 sshd") })
+                    2 -> ConfigTab(onChanged = { loading = true; SshConfig.restartDaemon(); loading = false; toast(context, "已重启 sshd") })
                 }
             }
         }
@@ -187,6 +183,7 @@ fun StatusTab(
 
 @Composable
 fun KeysTab() {
+    val context = LocalContext.current
     var keys by remember { mutableStateOf(listOf<String>()) }
     var newKey by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
@@ -196,7 +193,7 @@ fun KeysTab() {
     }
 
     fun refreshKeys() {
-        keys = RootShell.listKeys()
+        keys = withContext(Dispatchers.IO) { RootShell.listKeys() }
     }
 
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -239,12 +236,12 @@ fun KeysTab() {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = {
                     if (SshConfig.addKey(newKey)) {
-                        toast("已添加")
+                        toast(context, "已添加")
                         newKey = ""
                         expanded = false
                         refreshKeys()
                     } else {
-                        toast("公钥为空或已存在")
+                        toast(context, "公钥为空或已存在")
                     }
                 }) { Text("保存") }
                 OutlinedButton(onClick = { expanded = false; newKey = "" }) { Text("取消") }
@@ -317,4 +314,8 @@ fun ConfigTab(onChanged: () -> Unit) {
             Text("已保存", color = MaterialTheme.colorScheme.primary)
         }
     }
+}
+
+private fun toast(context: android.content.Context, msg: String) {
+    Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
 }
