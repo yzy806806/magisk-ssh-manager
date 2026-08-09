@@ -1,0 +1,59 @@
+package dev.yzy806806.magisksshmanager
+
+import android.util.Log
+import java.io.BufferedReader
+import java.io.DataOutputStream
+import java.io.InputStreamReader
+
+/**
+ * Root shell helper: runs commands via Magisk su and returns combined output.
+ * All module management goes through this single class so future features
+ * (e.g. managing other daemons like meshdesk) just call [exec].
+ */
+object RootShell {
+
+    private const val TAG = "RootShell"
+
+    /** Checks whether we can get a root shell (triggers Magisk's auth prompt). */
+    fun isAvailable(): Boolean = exec("id").contains("uid=0")
+
+    /**
+     * Executes a command as root via su -c. Returns trimmed combined output,
+     * or empty string on failure.
+     */
+    fun exec(command: String): String {
+        return try {
+            val process = ProcessBuilder("su", "-c", command)
+                .redirectErrorStream(true)
+                .start()
+            val output = process.inputStream.bufferedReader().use { it.readText() }
+            process.waitFor(30, java.util.concurrent.TimeUnit.SECONDS)
+            output.trim()
+        } catch (e: Exception) {
+            Log.w(TAG, "exec failed: ${e.message}")
+            ""
+        }
+    }
+
+    /** True if the MagiskSSH module (id=ssh) is installed. */
+    fun isModuleInstalled(): Boolean =
+        exec("ls /data/adb/modules/ssh/module.prop 2>/dev/null").isNotEmpty()
+
+    /** Returns the installed module version, or empty. */
+    fun moduleVersion(): String =
+        exec("grep '^version=' /data/adb/modules/ssh/module.prop 2>/dev/null")
+            .removePrefix("version=").trim()
+
+    /** True if sshd is currently running. */
+    fun isSshdRunning(): Boolean =
+        exec("cat /data/ssh/sshd.pid 2>/dev/null | xargs -r kill -0 2>/dev/null && echo yes")
+            .contains("yes")
+
+    /** Installs the MagiskSSH module zip from the given path. */
+    fun installModule(zipPath: String): String =
+        exec("magisk --install-module '$zipPath' 2>&1")
+
+    /** Removes the ssh module (module stays until reboot, or start script stops it). */
+    fun uninstallModule(): String =
+        exec("rm -rf /data/adb/modules/ssh 2>&1; echo done")
+}
