@@ -14,4 +14,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "MagiskSSHManager"
-include ':app'
+include(":app")
