@@ -26,8 +26,8 @@ jobs:
           curl -sL -o app/src/main/assets/magisk_ssh.zip \
             "https://gitlab.com/d4rcm4rc/MagiskSSH_releases/-/raw/main/magisk_ssh_v0.27.zip"
           ls -la app/src/main/assets/magisk_ssh.zip
-          # sanity check: must be a real zip
-          file app/src/main/assets/magisk_ssh.zip | grep -q ZIP && echo "OK: valid zip"
+          # sanity check: must be a real zip (PK magic bytes)
+          python3 -c "data=open('app/src/main/assets/magisk_ssh.zip','rb').read(2); assert data==b'PK', 'not a zip'; print('OK: valid zip')"
 
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug --no-daemon
