@@ -93,11 +93,13 @@ fun ManagerApp() {
                 rootOk == false -> RootNotAvailable()
                 else -> when (tab) {
                     0 -> StatusTab(
-                        moduleInstalled, moduleVersion, sshdRunning, loading,
+                        moduleInstalled, moduleVersion, sshdRunning, loading, message,
                         onInstall = {
                             loading = true
+                            message = ""
                             val result = ModuleInstaller.install(context)
                             loading = false
+                            message = result
                             toast(context, result)
                             refresh()
                         },
@@ -143,6 +145,7 @@ fun StatusTab(
     version: String,
     running: Boolean,
     loading: Boolean,
+    message: String,
     onInstall: () -> Unit,
     onUninstall: () -> Unit,
     onToggleSshd: () -> Unit,
@@ -162,6 +165,19 @@ fun StatusTab(
                 )
                 Text(
                     "配置目录: /data/ssh\n密钥文件: /data/ssh/root/.ssh/authorized_keys",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
+        }
+
+        if (message.isNotEmpty()) {
+            Card(colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer
+            )) {
+                Text(
+                    message,
+                    modifier = Modifier.padding(12.dp),
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = FontFamily.Monospace
                 )
