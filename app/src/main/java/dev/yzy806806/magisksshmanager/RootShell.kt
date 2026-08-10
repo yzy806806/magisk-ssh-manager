@@ -21,7 +21,11 @@ object RootShell {
     private fun suBinary(): String? =
         suPaths.firstOrNull { path ->
             try {
-                Runtime.getRuntime().exec(arrayOf(path, "--version")).waitFor() == 0
+                // probe with `id` (Magisk su may not support --version)
+                val p = Runtime.getRuntime().exec(arrayOf(path, "-c", "id"))
+                val out = p.inputStream.bufferedReader().use { it.readText() }
+                p.waitFor()
+                out.contains("uid=0")
             } catch (_: Exception) { false }
         }
 

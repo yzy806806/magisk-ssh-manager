@@ -47,7 +47,7 @@ object ModuleInstaller {
         return if (result.contains("Done") || result.contains("success") || result.contains("installed")) {
             "安装成功。重启手机后自动生效；或点“启动 sshd”立即启动。"
         } else {
-            "安装结果: $result"
+            "安装结果: $result\n(cp: $cpResult)\n(zip: $zipToInstall)"
         }
     }
 }
