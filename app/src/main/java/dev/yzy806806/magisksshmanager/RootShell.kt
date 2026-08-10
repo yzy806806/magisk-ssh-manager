@@ -62,9 +62,9 @@ object RootShell {
         exec("grep '^version=' /data/adb/modules/ssh/module.prop 2>/dev/null")
             .removePrefix("version=").trim()
 
-    /** True if sshd is currently running. */
+    /** True if sshd is currently running (checks process, not pid file). */
     fun isSshdRunning(): Boolean =
-        exec("cat /data/ssh/sshd.pid 2>/dev/null | xargs -r kill -0 2>/dev/null && echo yes")
+        exec("ps 2>/dev/null | grep -v grep | grep -q '[s]shd' && echo yes")
             .contains("yes")
 
     /** Installs the MagiskSSH module zip from the given path. */
