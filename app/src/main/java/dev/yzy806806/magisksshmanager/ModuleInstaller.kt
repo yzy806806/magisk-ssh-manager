@@ -29,12 +29,17 @@ object ModuleInstaller {
             return "内置模块缺失（构建时未打包）"
         }
 
-        // 2. copy to /data/local/tmp (readable by magisk)
-        RootShell.exec("cp '$cacheFile.absolutePath' $TMP_PATH && chmod 644 $TMP_PATH")
+        // 2. copy to /data/local/tmp (readable by magisk); verify the copy landed
+        val cpResult = RootShell.exec(
+            "cp '$cacheFile.absolutePath' $TMP_PATH && chmod 644 $TMP_PATH && ls -la $TMP_PATH"
+        )
+        if (!cpResult.contains(TMP_PATH.substringAfterLast('/'))) {
+            return "复制模块到 $TMP_PATH 失败: $cpResult"
+        }
 
         // 3. install via magisk
         val result = RootShell.installModule(TMP_PATH)
-        return if (result.contains("Done") || result.contains("success")) {
+        return if (result.contains("Done") || result.contains("success") || result.contains("installed")) {
             "安装成功。重启手机后自动生效；或点“启动 sshd”立即启动。"
         } else {
             "安装结果: $result"

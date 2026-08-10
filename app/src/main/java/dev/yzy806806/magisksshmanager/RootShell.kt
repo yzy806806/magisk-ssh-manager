@@ -14,16 +14,34 @@ object RootShell {
 
     private const val TAG = "RootShell"
 
+    // su binary lives at different paths on different devices (Magisk usually links
+    // /system/bin/su, but some ROMs keep it at /product/bin/su / system/xbin/su)
+    private val suPaths = listOf("/system/bin/su", "/product/bin/su", "/system/xbin/su", "/sbin/su", "su")
+
+    private fun suBinary(): String? =
+        suPaths.firstOrNull { path ->
+            try {
+                Runtime.getRuntime().exec(arrayOf(path, "--version")).waitFor() == 0
+            } catch (_: Exception) { false }
+        }
+
     /** Checks whether we can get a root shell (triggers Magisk's auth prompt). */
-    fun isAvailable(): Boolean = exec("id").contains("uid=0")
+    fun isAvailable(): Boolean {
+        val su = suBinary() ?: return false
+        return try {
+            val p = Runtime.getRuntime().exec(arrayOf(su, "-c", "id"))
+            p.inputStream.bufferedReader().use { it.readText() }.contains("uid=0")
+        } catch (_: Exception) { false }
+    }
 
     /**
      * Executes a command as root via su -c. Returns trimmed combined output,
      * or empty string on failure.
      */
     fun exec(command: String): String {
+        val su = suBinary() ?: return ""
         return try {
-            val process = ProcessBuilder("su", "-c", command)
+            val process = ProcessBuilder(su, "-c", command)
                 .redirectErrorStream(true)
                 .start()
             val output = process.inputStream.bufferedReader().use { it.readText() }
@@ -51,7 +69,7 @@ object RootShell {
 
     /** Installs the MagiskSSH module zip from the given path. */
     fun installModule(zipPath: String): String =
-        exec("magisk --install-module '$zipPath' 2>&1")
+        exec("/data/adb/magisk/magisk --install-module '$zipPath' 2>&1")
 
     /** Removes the ssh module (module stays until reboot, or start script stops it). */
     fun uninstallModule(): String =
