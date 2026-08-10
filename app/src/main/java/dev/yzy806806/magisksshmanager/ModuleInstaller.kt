@@ -32,7 +32,7 @@ object ModuleInstaller {
         // 2. copy to /data/local/tmp (readable by magisk); verify the copy landed.
         //    Fallback: install directly from the app cache dir (root can read it).
         val cpResult = RootShell.exec(
-            "cp '$cacheFile.absolutePath' $TMP_PATH && chmod 644 $TMP_PATH && ls -la $TMP_PATH"
+            "cp '${cacheFile.absolutePath}' $TMP_PATH && chmod 644 $TMP_PATH && ls -la $TMP_PATH"
         )
         val zipToInstall: String
         if (cpResult.contains(TMP_PATH.substringAfterLast('/'))) {

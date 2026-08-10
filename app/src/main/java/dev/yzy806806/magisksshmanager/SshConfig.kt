@@ -15,7 +15,7 @@ object SshConfig {
 
     /** Writes the full sshd_config (via a temp file to avoid partial writes). */
     fun writeConfig(content: String): Boolean {
-        val tmp = "$CONFIG_PATH.tmp"
+        val tmp = "${CONFIG_PATH}.tmp"
         val ok = RootShell.exec(
             "echo '${content.replace("'", "'\\''")}' > $tmp && " +
                 "chmod 600 $tmp && mv $tmp $CONFIG_PATH && echo OK"
@@ -86,7 +86,7 @@ object SshConfig {
     }
 
     private fun writeKeys(content: String): Boolean {
-        val tmp = "$KEYS_PATH.tmp"
+        val tmp = "${KEYS_PATH}.tmp"
         val ok = RootShell.exec(
             "mkdir -p ${KEYS_PATH.substringBeforeLast('/')} && " +
                 "echo '${content.replace("'", "'\\''")}' > $tmp && " +
