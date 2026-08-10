@@ -21,8 +21,8 @@ object RootShell {
     private fun suBinary(): String? =
         suPaths.firstOrNull { path ->
             try {
-                // probe with `id` (Magisk su may not support --version)
-                val p = Runtime.getRuntime().exec(arrayOf(path, "-c", "id"))
+                val p = Runtime.getRuntime().exec(arrayOf(path))
+                p.outputStream.bufferedWriter().use { it.write("id\n"); it.flush() }
                 val out = p.inputStream.bufferedReader().use { it.readText() }
                 p.waitFor()
                 out.contains("uid=0")
@@ -30,26 +30,22 @@ object RootShell {
         }
 
     /** Checks whether we can get a root shell (triggers Magisk's auth prompt). */
-    fun isAvailable(): Boolean {
-        val su = suBinary() ?: return false
-        return try {
-            val p = Runtime.getRuntime().exec(arrayOf(su, "-c", "id"))
-            p.inputStream.bufferedReader().use { it.readText() }.contains("uid=0")
-        } catch (_: Exception) { false }
-    }
+    fun isAvailable(): Boolean = suBinary() != null
 
     /**
-     * Executes a command as root via su -c. Returns trimmed combined output,
-     * or empty string on failure.
+     * Executes a command as root via su, feeding the command via stdin (more
+     * reliable than `su -c` on ROMs that mangle quoting). Returns trimmed
+     * combined output, or empty string on failure.
      */
     fun exec(command: String): String {
         val su = suBinary() ?: return ""
         return try {
-            val process = ProcessBuilder(su, "-c", command)
+            val process = ProcessBuilder(su)
                 .redirectErrorStream(true)
                 .start()
+            process.outputStream.bufferedWriter().use { it.write("$command\n"); it.flush() }
             val output = process.inputStream.bufferedReader().use { it.readText() }
-            process.waitFor(30, java.util.concurrent.TimeUnit.SECONDS)
+            process.waitFor(60, java.util.concurrent.TimeUnit.SECONDS)
             output.trim()
         } catch (e: Exception) {
             Log.w(TAG, "exec failed: ${e.message}")
